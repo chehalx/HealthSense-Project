@@ -220,20 +220,37 @@ def receive_health_data():
 @app.route('/api/latest', methods=['GET'])
 def get_latest_data():
     try:
-        if not health_data:
-            return jsonify({'status': 'error', 'message': 'No data available'}), 404
+        # Get latest health data from database
+        latest_db_data = HealthData.query.order_by(HealthData.timestamp.desc()).first()
+        
+        # If not in database, check in-memory (during transition)
+        if not latest_db_data and health_data:
+            latest_data = health_data[-1].to_dict()
             
-        latest_data = health_data[-1].to_dict()
-        
-        # Find associated prediction
-        latest_prediction = None
-        for p in reversed(predictions):
-            if p.health_data_id == latest_data['id']:
-                latest_prediction = p.to_dict()
-                break
-        
-        # Get associated alerts
-        data_alerts = [a.to_dict() for a in alerts if a.health_data_id == latest_data['id']]
+            # Find associated prediction from in-memory
+            latest_prediction = None
+            for p in reversed(predictions):
+                if p.health_data_id == latest_data['id']:
+                    latest_prediction = p.to_dict()
+                    break
+            
+            # Get associated alerts from in-memory
+            data_alerts = [a.to_dict() for a in alerts if a.health_data_id == latest_data['id']]
+            
+        elif latest_db_data:
+            # Get data from database
+            latest_data = latest_db_data.to_dict()
+            
+            # Find associated prediction from database
+            db_prediction = Prediction.query.filter_by(health_data_id=latest_data['id']).first()
+            latest_prediction = db_prediction.to_dict() if db_prediction else None
+            
+            # Get associated alerts from database
+            db_alerts = Alert.query.filter_by(health_data_id=latest_data['id']).all()
+            data_alerts = [a.to_dict() for a in db_alerts]
+            
+        else:
+            return jsonify({'status': 'error', 'message': 'No data available'}), 404
         
         return jsonify({
             'status': 'success',
@@ -260,16 +277,38 @@ def get_historical_data():
         # Calculate cutoff time
         cutoff_time = (datetime.utcnow() - timedelta(hours=hours)).isoformat()
         
-        # Filter data
-        filtered_data = [d.to_dict() for d in health_data if d.timestamp >= cutoff_time]
-        limited_data = filtered_data[-limit:] if limit < len(filtered_data) else filtered_data
+        # Query database for recent health data
+        db_data = HealthData.query.filter(HealthData.timestamp >= cutoff_time).order_by(HealthData.timestamp).limit(limit).all()
+        db_data_dicts = [d.to_dict() for d in db_data]
         
-        # Get associated predictions
+        # For transition period, also include in-memory data
+        in_memory_data = [d.to_dict() for d in health_data if d.timestamp >= cutoff_time]
+        
+        # Combine data, avoiding duplicates
+        all_data = db_data_dicts.copy()
+        for d in in_memory_data:
+            if not any(db_d['id'] == d['id'] for db_d in db_data_dicts):
+                all_data.append(d)
+                
+        # Sort by timestamp
+        all_data.sort(key=lambda x: x['timestamp'])
+        
+        # Limit results
+        limited_data = all_data[-limit:] if limit < len(all_data) else all_data
+        
+        # Get associated predictions from database
         data_predictions = {}
-        for p in predictions:
-            for d in limited_data:
-                if p.health_data_id == d['id']:
-                    data_predictions[d['id']] = p.to_dict()
+        for d in limited_data:
+            # Try database first
+            db_prediction = Prediction.query.filter_by(health_data_id=d['id']).first()
+            if db_prediction:
+                data_predictions[d['id']] = db_prediction.to_dict()
+            else:
+                # Try in-memory
+                for p in predictions:
+                    if p.health_data_id == d['id']:
+                        data_predictions[d['id']] = p.to_dict()
+                        break
         
         return jsonify({
             'status': 'success',
@@ -328,8 +367,16 @@ def get_alerts():
         # Get query parameters
         acknowledged = request.args.get('acknowledged', 'false').lower() == 'true'
         
-        # Filter alerts
-        filtered_alerts = [a.to_dict() for a in alerts if a.acknowledged == acknowledged]
+        # Query database for alerts
+        db_alerts = Alert.query.filter_by(acknowledged=acknowledged).all()
+        filtered_alerts = [a.to_dict() for a in db_alerts]
+        
+        # For transition period, also include in-memory alerts
+        for a in alerts:
+            if a.acknowledged == acknowledged:
+                # Only add if not already in list (avoid duplicates)
+                if not any(db_alert['id'] == a.id for db_alert in filtered_alerts):
+                    filtered_alerts.append(a.to_dict())
         
         return jsonify({
             'status': 'success',
