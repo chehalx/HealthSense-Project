@@ -26,6 +26,90 @@ def reports():
 def device_settings():
     return render_template('device_settings.html')
 
+# Route for manual data entry
+@app.route('/manual-entry', methods=['GET', 'POST'])
+def manual_entry():
+    if request.method == 'POST':
+        try:
+            # Get data from form
+            data = {
+                'device_id': request.form.get('device_id', 'MANUAL'),
+                'glucose': float(request.form.get('glucose', 0)),
+                'bp_systolic': float(request.form.get('bp_systolic', 0)),
+                'bp_diastolic': float(request.form.get('bp_diastolic', 0)),
+                'spo2': float(request.form.get('spo2', 0)),
+                'heart_rate': float(request.form.get('heart_rate', 0)),
+                'timestamp': datetime.utcnow().isoformat()
+            }
+            
+            # Create HealthData object
+            new_health_data = HealthData(
+                device_id=data['device_id'],
+                glucose=data['glucose'],
+                bp_systolic=data['bp_systolic'],
+                bp_diastolic=data['bp_diastolic'],
+                spo2=data['spo2'],
+                heart_rate=data['heart_rate'],
+                timestamp=data['timestamp']
+            )
+            
+            # Store data
+            health_data.append(new_health_data)
+            if len(health_data) > 1000:
+                health_data.pop(0)
+            
+            # Run ML predictions
+            diabetes_risk = predict_diabetes(diabetes_model, new_health_data.glucose)
+            heart_disease_risk = predict_heart_disease(
+                heart_model, 
+                new_health_data.bp_systolic, 
+                new_health_data.bp_diastolic, 
+                new_health_data.heart_rate
+            )
+            hypoxia_risk = predict_hypoxia(hypoxia_model, new_health_data.spo2, new_health_data.heart_rate)
+            
+            # Create Prediction object
+            new_prediction = Prediction(
+                health_data_id=new_health_data.id,
+                diabetes_risk=diabetes_risk,
+                heart_disease_risk=heart_disease_risk,
+                hypoxia_risk=hypoxia_risk
+            )
+            
+            # Store prediction
+            predictions.append(new_prediction)
+            if len(predictions) > 1000:
+                predictions.pop(0)
+            
+            # Check for alerts
+            health_alerts = get_health_alerts(new_health_data)
+            for alert_data in health_alerts:
+                new_alert = Alert(
+                    health_data_id=new_health_data.id,
+                    message=alert_data["message"],
+                    condition=alert_data["condition"],
+                    severity=alert_data["severity"]
+                )
+                alerts.append(new_alert)
+                if len(alerts) > 100:
+                    alerts.pop(0)
+            
+            # Broadcast data to connected clients
+            socketio.emit('new_health_data', {
+                'health_data': new_health_data.to_dict(),
+                'prediction': new_prediction.to_dict(),
+                'alerts': [a.to_dict() for a in alerts if a.health_data_id == new_health_data.id]
+            })
+            
+            # Redirect to dashboard with success message
+            return redirect(url_for('index'))
+            
+        except Exception as e:
+            logger.error(f"Error processing manual data: {e}")
+            return render_template('manual_entry.html', error=str(e))
+    
+    return render_template('manual_entry.html')
+
 # API endpoint to receive health data from devices
 @app.route('/api/healthdata', methods=['POST'])
 def receive_health_data():
