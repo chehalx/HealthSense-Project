@@ -79,7 +79,10 @@ def manual_entry():
                 hypoxia_risk=hypoxia_risk
             )
             
-            # Store prediction
+            # Store prediction in database
+            db.session.add(new_prediction)
+            
+            # Also keep in memory for transition period
             predictions.append(new_prediction)
             if len(predictions) > 1000:
                 predictions.pop(0)
@@ -93,9 +96,16 @@ def manual_entry():
                     condition=alert_data["condition"],
                     severity=alert_data["severity"]
                 )
+                # Store alert in database
+                db.session.add(new_alert)
+                
+                # Also keep in memory for transition period
                 alerts.append(new_alert)
                 if len(alerts) > 100:
                     alerts.pop(0)
+            
+            # Commit changes to database
+            db.session.commit()
             
             # Broadcast data to connected clients
             socketio.emit('new_health_data', {
@@ -131,7 +141,10 @@ def receive_health_data():
             timestamp=data.get('timestamp', datetime.utcnow().isoformat())
         )
         
-        # Store data
+        # Store data in database
+        db.session.add(new_health_data)
+        
+        # Also keep in memory for transition period
         health_data.append(new_health_data)
         if len(health_data) > 1000:  # Limit storage size for MVP
             health_data.pop(0)
@@ -154,7 +167,10 @@ def receive_health_data():
             hypoxia_risk=hypoxia_risk
         )
         
-        # Store prediction
+        # Store prediction in database
+        db.session.add(new_prediction)
+        
+        # Also keep in memory for transition period
         predictions.append(new_prediction)
         if len(predictions) > 1000:  # Limit storage size for MVP
             predictions.pop(0)
@@ -168,9 +184,16 @@ def receive_health_data():
                 condition=alert_data["condition"],
                 severity=alert_data["severity"]
             )
+            # Store in database
+            db.session.add(new_alert)
+            
+            # Keep in memory for transition
             alerts.append(new_alert)
             if len(alerts) > 100:  # Limit alerts for MVP
                 alerts.pop(0)
+        
+        # Commit changes to database
+        db.session.commit()
         
         # Broadcast data to connected clients
         socketio.emit('new_health_data', {
@@ -265,13 +288,25 @@ def get_historical_data():
 @app.route('/api/alerts/<alert_id>/acknowledge', methods=['POST'])
 def acknowledge_alert(alert_id):
     try:
-        for alert in alerts:
-            if alert.id == alert_id:
-                alert.acknowledged = True
+        # First check database
+        alert = Alert.query.get(alert_id)
+        if alert:
+            alert.acknowledged = True
+            db.session.commit()
+            return jsonify({
+                'status': 'success',
+                'message': 'Alert acknowledged',
+                'alert': alert.to_dict()
+            }), 200
+        
+        # If not found in database, check in-memory (for transition period)
+        for in_memory_alert in alerts:
+            if in_memory_alert.id == alert_id:
+                in_memory_alert.acknowledged = True
                 return jsonify({
                     'status': 'success',
                     'message': 'Alert acknowledged',
-                    'alert': alert.to_dict()
+                    'alert': in_memory_alert.to_dict()
                 }), 200
         
         return jsonify({
