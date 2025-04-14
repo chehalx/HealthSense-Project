@@ -4,7 +4,7 @@ import logging
 from datetime import datetime, timedelta
 import time
 
-from app import app, socketio, health_data, predictions, alerts
+from app import app, socketio, db, health_data, predictions, alerts
 from app import diabetes_model, heart_model, hypoxia_model
 from models import HealthData, Prediction, Alert
 from ml_models import predict_diabetes, predict_heart_disease, predict_hypoxia, get_health_alerts
@@ -53,7 +53,10 @@ def manual_entry():
                 timestamp=data['timestamp']
             )
             
-            # Store data
+            # Store data in the database
+            db.session.add(new_health_data)
+            
+            # Also keep in memory for transition period
             health_data.append(new_health_data)
             if len(health_data) > 1000:
                 health_data.pop(0)
