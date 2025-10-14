@@ -37,7 +37,10 @@ The system also includes advanced disease detection algorithms, providing real-t
 
 _**To see the app in action:**_
 - Run locally and visit [http://localhost:5000](http://localhost:5000)
-- (Optionally add screenshots or a demo video here)
+
+
+https://github.com/user-attachments/assets/b29615db-3982-4421-ace1-828b3edc706b
+
 
 ---
 
@@ -50,9 +53,4 @@ _**To see the app in action:**_
 - All required dependencies in `pyproject.toml`:
   - Flask, Flask-CORS, Flask-SQLAlchemy, Flask-SocketIO, NumPy, requests, scikit-learn, psycopg2-binary, email-validator, gunicorn
 
-### Installation
-
-
-
-https://github.com/user-attachments/assets/b29615db-3982-4421-ace1-828b3edc706b
 
