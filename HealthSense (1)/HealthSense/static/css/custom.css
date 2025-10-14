@@ -1,0 +1,136 @@
+/* HealthSense Custom CSS */
+
+/* Override some Bootstrap variables for dark theme consistency */
+:root {
+    --primary-color: #3498db;
+    --secondary-color: #2ecc71;
+    --danger-color: #e74c3c;
+    --warning-color: #f39c12;
+    --info-color: #3498db;
+    --dark-bg: #1e1e2f;
+    --card-bg: #27293d;
+    --text-color: #ffffff;
+}
+
+/* Main dashboard styles */
+.vital-card {
+    transition: transform 0.3s ease;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.vital-card:hover {
+    transform: translateY(-5px);
+}
+
+.vital-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.value {
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+.value.normal {
+    color: var(--secondary-color);
+}
+
+.value.abnormal {
+    color: var(--danger-color);
+}
+
+.unit {
+    font-size: 1rem;
+    opacity: 0.8;
+    margin-left: 0.25rem;
+}
+
+.chart-container {
+    position: relative;
+    height: 240px;
+    margin-top: 1rem;
+}
+
+/* Predictions section */
+.prediction-container {
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+.prediction-title {
+    font-size: 1.1rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+.prediction-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.low-risk {
+    color: var(--secondary-color);
+}
+
+.medium-risk {
+    color: var(--warning-color);
+}
+
+.high-risk {
+    color: var(--danger-color);
+}
+
+/* Alerts section */
+.alerts-section {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+#alert-count {
+    background-color: var(--danger-color);
+    color: white;
+    border-radius: 50%;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+    margin-left: 0.5rem;
+}
+
+/* Device simulator section */
+.device-simulator {
+    background-color: var(--card-bg);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+}
+
+/* Dark theme modifications */
+.navbar {
+    background-color: var(--card-bg) !important;
+}
+
+.card {
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .value {
+        font-size: 1.5rem;
+    }
+    
+    .vital-icon {
+        font-size: 2rem;
+    }
+    
+    .chart-container {
+        height: 200px;
+    }
+}

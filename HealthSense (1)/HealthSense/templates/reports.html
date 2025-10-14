@@ -1,0 +1,409 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="mb-0">Health Reports</h1>
+        <p class="text-muted">View and download historical health data</p>
+    </div>
+</div>
+
+<!-- Date Range Selector -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row align-items-end">
+            <div class="col-md-3 mb-3 mb-md-0">
+                <label for="from-date" class="form-label">From Date</label>
+                <input type="date" id="from-date" class="form-control" value="{{ yesterday }}">
+            </div>
+            <div class="col-md-3 mb-3 mb-md-0">
+                <label for="to-date" class="form-label">To Date</label>
+                <input type="date" id="to-date" class="form-control" value="{{ today }}">
+            </div>
+            <div class="col-md-3 mb-3 mb-md-0">
+                <label for="metric-select" class="form-label">Metrics</label>
+                <select id="metric-select" class="form-select">
+                    <option value="all">All Metrics</option>
+                    <option value="glucose">Glucose</option>
+                    <option value="bp">Blood Pressure</option>
+                    <option value="spo2">SpO₂</option>
+                    <option value="heart_rate">Heart Rate</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button id="generate-report-btn" class="btn btn-primary w-100">
+                    <i class="fas fa-chart-line me-2"></i>
+                    Generate Report
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Report Charts -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Health Metrics Over Time</h5>
+    </div>
+    <div class="card-body">
+        <div id="report-charts">
+            <div id="report-chart-container" class="chart-container" style="height: 400px;">
+                <canvas id="report-chart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Health Statistics -->
+<div class="row mb-4">
+    <div class="col-md-6 mb-3">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">Statistics</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Metric</th>
+                            <th>Min</th>
+                            <th>Max</th>
+                            <th>Average</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stats-table-body">
+                        <tr>
+                            <td>Glucose</td>
+                            <td>--</td>
+                            <td>--</td>
+                            <td>--</td>
+                        </tr>
+                        <tr>
+                            <td>Systolic BP</td>
+                            <td>--</td>
+                            <td>--</td>
+                            <td>--</td>
+                        </tr>
+                        <tr>
+                            <td>Diastolic BP</td>
+                            <td>--</td>
+                            <td>--</td>
+                            <td>--</td>
+                        </tr>
+                        <tr>
+                            <td>SpO₂</td>
+                            <td>--</td>
+                            <td>--</td>
+                            <td>--</td>
+                        </tr>
+                        <tr>
+                            <td>Heart Rate</td>
+                            <td>--</td>
+                            <td>--</td>
+                            <td>--</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-3">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">Risk Assessment</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Condition</th>
+                            <th>Average Risk</th>
+                            <th>Max Risk</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="risk-table-body">
+                        <tr>
+                            <td>Diabetes</td>
+                            <td>--</td>
+                            <td>--</td>
+                            <td>--</td>
+                        </tr>
+                        <tr>
+                            <td>Heart Disease</td>
+                            <td>--</td>
+                            <td>--</td>
+                            <td>--</td>
+                        </tr>
+                        <tr>
+                            <td>Hypoxia</td>
+                            <td>--</td>
+                            <td>--</td>
+                            <td>--</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Export Options -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-file-export me-2"></i>
+            Export Options
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <button id="export-pdf-btn" class="btn btn-outline-primary w-100">
+                    <i class="fas fa-file-pdf me-2"></i>
+                    Export as PDF
+                </button>
+            </div>
+            <div class="col-md-4 mb-3">
+                <button id="export-csv-btn" class="btn btn-outline-primary w-100">
+                    <i class="fas fa-file-csv me-2"></i>
+                    Export as CSV
+                </button>
+            </div>
+            <div class="col-md-4 mb-3">
+                <button id="export-json-btn" class="btn btn-outline-primary w-100">
+                    <i class="fas fa-file-code me-2"></i>
+                    Export as JSON
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set default dates
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 7); // Default to last 7 days
+    
+    document.getElementById('to-date').valueAsDate = today;
+    document.getElementById('from-date').valueAsDate = yesterday;
+    
+    // Report chart
+    let reportChart = null;
+    
+    // Initialize report chart
+    function initReportChart() {
+        const ctx = document.getElementById('report-chart').getContext('2d');
+        reportChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: []
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
+                }
+            }
+        });
+    }
+    
+    // Initialize chart on page load
+    initReportChart();
+    
+    // Generate report button click handler
+    document.getElementById('generate-report-btn').addEventListener('click', function() {
+        const fromDate = document.getElementById('from-date').value;
+        const toDate = document.getElementById('to-date').value;
+        const metric = document.getElementById('metric-select').value;
+        
+        // Mock data for demonstration purposes
+        generateMockReportData(fromDate, toDate, metric);
+    });
+    
+    // Generate mock report data for the demo
+    function generateMockReportData(fromDate, toDate, metricType) {
+        // Parse dates
+        const startDate = new Date(fromDate);
+        const endDate = new Date(toDate);
+        endDate.setHours(23, 59, 59);
+        
+        // Clear existing chart data
+        reportChart.data.labels = [];
+        reportChart.data.datasets = [];
+        
+        // Generate date labels
+        const dateLabels = [];
+        const currentDate = new Date(startDate);
+        
+        while (currentDate <= endDate) {
+            dateLabels.push(currentDate.toLocaleDateString());
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+        
+        // Set chart labels
+        reportChart.data.labels = dateLabels;
+        
+        // Add datasets based on selected metric
+        if (metricType === 'all' || metricType === 'glucose') {
+            addDataset('Glucose (mg/dL)', 'rgba(255, 159, 64, 1)', 'rgba(255, 159, 64, 0.2)', 
+                      generateMockData(dateLabels.length, 80, 200));
+        }
+        
+        if (metricType === 'all' || metricType === 'bp') {
+            addDataset('Systolic BP (mmHg)', 'rgba(255, 99, 132, 1)', 'rgba(255, 99, 132, 0.2)', 
+                      generateMockData(dateLabels.length, 100, 160));
+            addDataset('Diastolic BP (mmHg)', 'rgba(255, 99, 132, 0.6)', 'rgba(255, 99, 132, 0.1)', 
+                      generateMockData(dateLabels.length, 60, 100));
+        }
+        
+        if (metricType === 'all' || metricType === 'spo2') {
+            addDataset('SpO₂ (%)', 'rgba(54, 162, 235, 1)', 'rgba(54, 162, 235, 0.2)', 
+                      generateMockData(dateLabels.length, 88, 100));
+        }
+        
+        if (metricType === 'all' || metricType === 'heart_rate') {
+            addDataset('Heart Rate (BPM)', 'rgba(75, 192, 192, 1)', 'rgba(75, 192, 192, 0.2)', 
+                      generateMockData(dateLabels.length, 50, 110));
+        }
+        
+        // Update chart
+        reportChart.update();
+        
+        // Update statistics table
+        updateStatisticsTables();
+    }
+    
+    // Helper to add a dataset to the chart
+    function addDataset(label, borderColor, backgroundColor, data) {
+        reportChart.data.datasets.push({
+            label: label,
+            data: data,
+            borderColor: borderColor,
+            backgroundColor: backgroundColor,
+            borderWidth: 2,
+            tension: 0.1,
+            fill: true
+        });
+    }
+    
+    // Generate mock data points
+    function generateMockData(length, min, max) {
+        const data = [];
+        for (let i = 0; i < length; i++) {
+            data.push(Math.floor(Math.random() * (max - min + 1) + min));
+        }
+        return data;
+    }
+    
+    // Update statistics tables with mock data
+    function updateStatisticsTables() {
+        // Update statistics table
+        const statsTableBody = document.getElementById('stats-table-body');
+        statsTableBody.innerHTML = '';
+        
+        // Get datasets from the chart
+        const datasets = reportChart.data.datasets;
+        
+        // Add a row for each dataset
+        datasets.forEach(dataset => {
+            const data = dataset.data;
+            const min = Math.min(...data);
+            const max = Math.max(...data);
+            const avg = Math.round(data.reduce((a, b) => a + b, 0) / data.length);
+            
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${dataset.label}</td>
+                <td>${min}</td>
+                <td>${max}</td>
+                <td>${avg}</td>
+            `;
+            statsTableBody.appendChild(row);
+        });
+        
+        // Update risk table with mock data
+        const riskTableBody = document.getElementById('risk-table-body');
+        riskTableBody.innerHTML = '';
+        
+        // Mock risk data
+        const risks = [
+            {
+                condition: 'Diabetes',
+                avgRisk: Math.round(Math.random() * 50),
+                maxRisk: Math.round(Math.random() * 50) + 50
+            },
+            {
+                condition: 'Heart Disease',
+                avgRisk: Math.round(Math.random() * 40),
+                maxRisk: Math.round(Math.random() * 60) + 40
+            },
+            {
+                condition: 'Hypoxia',
+                avgRisk: Math.round(Math.random() * 30),
+                maxRisk: Math.round(Math.random() * 70) + 30
+            }
+        ];
+        
+        // Add rows for each risk
+        risks.forEach(risk => {
+            let status;
+            if (risk.maxRisk < 20) {
+                status = '<span class="badge bg-success">Low</span>';
+            } else if (risk.maxRisk < 50) {
+                status = '<span class="badge bg-warning">Medium</span>';
+            } else {
+                status = '<span class="badge bg-danger">High</span>';
+            }
+            
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${risk.condition}</td>
+                <td>${risk.avgRisk}%</td>
+                <td>${risk.maxRisk}%</td>
+                <td>${status}</td>
+            `;
+            riskTableBody.appendChild(row);
+        });
+    }
+    
+    // Export buttons
+    document.getElementById('export-pdf-btn').addEventListener('click', function() {
+        alert('PDF export feature would be implemented here.');
+    });
+    
+    document.getElementById('export-csv-btn').addEventListener('click', function() {
+        alert('CSV export feature would be implemented here.');
+    });
+    
+    document.getElementById('export-json-btn').addEventListener('click', function() {
+        alert('JSON export feature would be implemented here.');
+    });
+    
+    // Generate initial report
+    document.getElementById('generate-report-btn').click();
+});
+</script>
+{% endblock %}

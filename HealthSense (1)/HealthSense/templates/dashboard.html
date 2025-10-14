@@ -1,0 +1,239 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="mb-0">Health Dashboard</h1>
+        <p class="text-muted">Real-time health monitoring and disease prediction</p>
+    </div>
+    <div class="col-auto text-end">
+        <p class="mb-0">Last Updated: <span id="last-update-time">--:--</span></p>
+        <small class="text-muted">Device ID: HEALTH01</small>
+    </div>
+</div>
+
+<!-- Vital Signs Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card vital-card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-tint vital-icon text-warning"></i>
+                <h5 class="card-title">Glucose</h5>
+                <p class="mb-0">
+                    <span id="glucose-value" class="value">--</span>
+                    <span class="unit">mg/dL</span>
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card vital-card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-heartbeat vital-icon text-danger"></i>
+                <h5 class="card-title">Blood Pressure</h5>
+                <p class="mb-0">
+                    <span id="bp-value" class="value">--/--</span>
+                    <span class="unit">mmHg</span>
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card vital-card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-lungs vital-icon text-info"></i>
+                <h5 class="card-title">SpO₂</h5>
+                <p class="mb-0">
+                    <span id="spo2-value" class="value">--</span>
+                    <span class="unit">%</span>
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card vital-card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-heart vital-icon text-success"></i>
+                <h5 class="card-title">Heart Rate</h5>
+                <p class="mb-0">
+                    <span id="heart-rate-value" class="value">--</span>
+                    <span class="unit">BPM</span>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Health Charts -->
+<div class="row mb-4">
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">Glucose Trend</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="glucose-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">Blood Pressure Trend</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="bp-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">SpO₂ Trend</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="spo2-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">Heart Rate Trend</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="heart-rate-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Health Risk Predictions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-brain me-2"></i>
+                    Disease Risk Predictions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <div class="prediction-container">
+                            <div class="prediction-title">
+                                <i class="fas fa-syringe me-2"></i> Diabetes Risk
+                            </div>
+                            <div id="diabetes-risk" class="prediction-value">--</div>
+                            <div class="progress mt-2">
+                                <div class="progress-bar" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="prediction-container">
+                            <div class="prediction-title">
+                                <i class="fas fa-heart-broken me-2"></i> Heart Disease Risk
+                            </div>
+                            <div id="heart-disease-risk" class="prediction-value">--</div>
+                            <div class="progress mt-2">
+                                <div class="progress-bar" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="prediction-container">
+                            <div class="prediction-title">
+                                <i class="fas fa-wind me-2"></i> Hypoxia Risk
+                            </div>
+                            <div id="hypoxia-risk" class="prediction-value">--</div>
+                            <div class="progress mt-2">
+                                <div class="progress-bar" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Active Alerts -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Active Health Alerts
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="alerts-container" class="alerts-section">
+                    <!-- Alerts will be dynamically added here -->
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-check-circle fa-3x mb-3"></i>
+                        <p>No active alerts at this time</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Device Simulator -->
+<div class="card device-simulator mb-4">
+    <div class="card-body">
+        <h5 class="card-title mb-3">
+            <i class="fas fa-microchip me-2"></i>
+            Device Simulator
+        </h5>
+        <div class="row align-items-center">
+            <div class="col-md-3 mb-3">
+                <label for="scenario-select" class="form-label">Health Scenario</label>
+                <select id="scenario-select" class="form-select">
+                    <option value="healthy">Healthy</option>
+                    <option value="diabetes">Diabetes</option>
+                    <option value="heart_issue">Heart Issue</option>
+                    <option value="hypoxia">Hypoxia</option>
+                    <option value="random">Random</option>
+                </select>
+            </div>
+            <div class="col-md-3 mb-3">
+                <label for="interval-select" class="form-label">Update Interval</label>
+                <select id="interval-select" class="form-select">
+                    <option value="5">5 seconds</option>
+                    <option value="10">10 seconds</option>
+                    <option value="30">30 seconds</option>
+                    <option value="60">60 seconds</option>
+                </select>
+            </div>
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Status</label>
+                <p id="simulation-status" class="mb-0">Not running</p>
+            </div>
+            <div class="col-md-3 mb-3 text-md-end">
+                <button onclick="startDeviceSimulation()" class="btn btn-primary">
+                    <i class="fas fa-play me-2"></i>
+                    Start Simulation
+                </button>
+            </div>
+        </div>
+        <small class="text-muted">Note: Run the device_simulator.py script to send data from your local machine</small>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}
